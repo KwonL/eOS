@@ -20,15 +20,92 @@ static _os_node_t *_os_ready_queue[LOWEST_PRIORITY + 1];
  * Pointer to TCB of running task
  */
 static eos_tcb_t *_os_current_task;
+static _os_node_t task_node[4];
+static int32u_t task_count = 0;
 
 int32u_t eos_create_task(eos_tcb_t *task, addr_t sblock_start, size_t sblock_size, void (*entry)(void *arg), void *arg, int32u_t priority) {
 	PRINT("task: 0x%x, priority: %d\n", (int32u_t)task, priority);
+	
+	// create context and return its context_t pointer
+    addr_t context_ptr = _os_create_context(sblock_start, sblock_size, entry, arg);
+	print_context(context_ptr);
+
+	// initializing TCB
+	task->sp = context_ptr;
+	task->state = READY;
+	task->priority = priority;
+	task->frequency = 0;
+	task->pid = task_count;
+
+	// enqueue task
+	task_node[task_count].priority = task->priority;
+	task_node[task_count].ptr_data = task;
+	task_node[task_count].next = NULL;
+	task_node[task_count].previous = NULL;
+	task_count++;
+
+	// _os_add_node_tail(_os_ready_queue + priority, &task_node[task_count]);
+	if (_os_ready_queue[priority] == NULL) {
+		_os_ready_queue[priority] = task_node[task_count];
+	} else {
+		_os_ready_queue[priority]->next = task_node[task_count];
+		task_node[task_count]->previous = _os_ready_queue[priority];
+	}
+
+	//debuging 
+	PRINT("task num is %d\n", task_count);
+	PRINT("ready queue : 0x%x\n", _os_ready_queue[0]);
+	////////////////////////////////////
+	return 0;
 }
 
 int32u_t eos_destroy_task(eos_tcb_t *task) {
 }
 
 void eos_schedule() {
+
+	// sp for current_task
+	addr_t old_stack_ptr;
+
+	// for debuging, print all node
+	int i;
+	_os_node_t* cur = _os_ready_queue[0];
+	for (i= 0; i < 2; i++) {
+		PRINT("current : 0x%x, and value : 0x%x\n", cur, cur->ptr_data);
+		cur = cur->next;
+	}
+
+	// some task that is running
+	if (_os_current_task != NULL) {
+		// save context and resotre next context
+		if (old_stack_ptr = _os_save_context() != NULL) {
+			_os_current_task->sp = old_stack_ptr;
+			// enqueu current task into ready queue
+			if (_os_ready_queue[priority] == NULL) {
+				_os_ready_queue[priority] = task_node[task_count];
+			} else {
+				_os_ready_queue[priority]->next = task_node[task_count];
+				task_node[task_count]->previous = _os_ready_queue[priority];
+			}
+			// reallocate current task on ready_queue
+			_os_current_task = _os_ready_queue[0]->ptr_data;
+			_os_ready_queue[0] = 
+
+			_os_restore_context(_os_current_task->sp);
+		} 
+		// after resotring context
+		else {
+			return;
+		}
+	}
+	// there is no task initially
+	else {
+		_os_current_task = _os_ready_queue[0]->ptr_data;
+		_os_remove_node(_os_ready_queue, &task_node[_os_current_task->pid]);
+
+		_os_restore_context(_os_current_task->sp);
+	}
+
 }
 
 eos_tcb_t *eos_get_current_task() {
