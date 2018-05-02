@@ -40,15 +40,17 @@ addr_t _os_create_context(addr_t stack_base, size_t stack_size, void (*entry)(vo
 	*(stack_high - 1) = arg;
 	*(stack_high - 2) = NULL;
 
+	// push entry pointer: this will be return address
+	*(stack_high - 3) = (int32u_t*)entry;
 	// push all registers
-	for (i = 3; i < 12; i++) {
-		*(stack_high - i) = (int32u_t)0;
+	for (i = 4; i < 12; i++) {
+		*(stack_high - i) = (int32u_t)0;	
 	}
 
 	// for debuging
-	*(stack_high - 12) = 3;
-	PRINT("context address  =0x%x\n", stack_high - 12);
-	PRINT("And content is  =0x%x\n", *(stack_high - 12));
+	// *(stack_high - 12) = 3;
+	// PRINT("context address  =0x%x\n", stack_high - 12);
+	// PRINT("And content is  =0x%x\n", *(stack_high - 12));
 	//////////////////////////////
 
 	// stack top - sizeof(arg) - sizeof(addr) - sizeof(registers)
@@ -74,7 +76,7 @@ addr_t _os_save_context() {
 		"pushf;"
 		"movl $0, %eax;"
 		"pusha;"
-		"movl  %esp, %eax;;"
+		"movl  %esp, %eax;"
 		"push 4(%ebp);"
 		"push (%ebp);"
 		"movl %esp, %ebp;"

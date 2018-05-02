@@ -40,22 +40,17 @@ int32u_t eos_create_task(eos_tcb_t *task, addr_t sblock_start, size_t sblock_siz
 	// enqueue task
 	task_node[task_count].priority = task->priority;
 	task_node[task_count].ptr_data = task;
-	task_node[task_count].next = NULL;
-	task_node[task_count].previous = NULL;
-	task_count++;
-
+	
 	// _os_add_node_tail(_os_ready_queue + priority, &task_node[task_count]);
-	if (_os_ready_queue[priority] == NULL) {
-		_os_ready_queue[priority] = task_node[task_count];
-	} else {
-		_os_ready_queue[priority]->next = task_node[task_count];
-		task_node[task_count]->previous = _os_ready_queue[priority];
-	}
+	_os_add_node_tail(_os_ready_queue + priority, task_node + task_count);
 
 	//debuging 
 	PRINT("task num is %d\n", task_count);
 	PRINT("ready queue : 0x%x\n", _os_ready_queue[0]);
 	////////////////////////////////////
+
+	task_count++;
+
 	return 0;
 }
 
@@ -67,29 +62,25 @@ void eos_schedule() {
 	// sp for current_task
 	addr_t old_stack_ptr;
 
-	// for debuging, print all node
-	int i;
-	_os_node_t* cur = _os_ready_queue[0];
-	for (i= 0; i < 2; i++) {
-		PRINT("current : 0x%x, and value : 0x%x\n", cur, cur->ptr_data);
-		cur = cur->next;
-	}
+	// // for debuging, print all node
+	// int i;
+	// _os_node_t* cur = _os_ready_queue[0];
+	// for (i= 0; i < 2; i++) {
+	// 	PRINT("current : 0x%x, and value : 0x%x\n", cur, cur->ptr_data);
+	// 	cur = cur->next;
+	// }
 
 	// some task that is running
 	if (_os_current_task != NULL) {
 		// save context and resotre next context
-		if (old_stack_ptr = _os_save_context() != NULL) {
+		old_stack_ptr = _os_save_context();
+		if (old_stack_ptr != NULL) {
 			_os_current_task->sp = old_stack_ptr;
 			// enqueu current task into ready queue
-			if (_os_ready_queue[priority] == NULL) {
-				_os_ready_queue[priority] = task_node[task_count];
-			} else {
-				_os_ready_queue[priority]->next = task_node[task_count];
-				task_node[task_count]->previous = _os_ready_queue[priority];
-			}
+			_os_add_node_tail(_os_ready_queue, task_node + _os_current_task->pid);
 			// reallocate current task on ready_queue
 			_os_current_task = _os_ready_queue[0]->ptr_data;
-			_os_ready_queue[0] = 
+			_os_remove_node(_os_ready_queue, task_node + _os_current_task->pid);
 
 			_os_restore_context(_os_current_task->sp);
 		} 
@@ -101,8 +92,8 @@ void eos_schedule() {
 	// there is no task initially
 	else {
 		_os_current_task = _os_ready_queue[0]->ptr_data;
-		_os_remove_node(_os_ready_queue, &task_node[_os_current_task->pid]);
-
+		_os_remove_node(_os_ready_queue, task_node + _os_current_task->pid);
+		
 		_os_restore_context(_os_current_task->sp);
 	}
 
