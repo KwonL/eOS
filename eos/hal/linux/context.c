@@ -43,7 +43,7 @@ addr_t _os_create_context(addr_t stack_base, size_t stack_size, void (*entry)(vo
 	// push entry pointer: this will be return address
 	*(stack_high - 3) = (int32u_t*)entry;
 	// push all registers
-	for (i = 4; i < 12; i++) {
+	for (i = 4; i < 13; i++) {
 		*(stack_high - i) = (int32u_t)0;	
 	}
 

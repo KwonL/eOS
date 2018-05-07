@@ -28,7 +28,7 @@ int32u_t eos_create_task(eos_tcb_t *task, addr_t sblock_start, size_t sblock_siz
 	
 	// create context and return its context_t pointer
     addr_t context_ptr = _os_create_context(sblock_start, sblock_size, entry, arg);
-	print_context(context_ptr);
+	// print_context(context_ptr);
 
 	// initializing TCB
 	task->sp = context_ptr;
@@ -44,10 +44,10 @@ int32u_t eos_create_task(eos_tcb_t *task, addr_t sblock_start, size_t sblock_siz
 	// _os_add_node_tail(_os_ready_queue + priority, &task_node[task_count]);
 	_os_add_node_tail(_os_ready_queue + priority, task_node + task_count);
 
-	//debuging 
-	PRINT("task num is %d\n", task_count);
-	PRINT("ready queue : 0x%x\n", _os_ready_queue[0]);
-	////////////////////////////////////
+	// //debuging 
+	// PRINT("task num is %d\n", task_count);
+	// PRINT("ready queue : 0x%x\n", _os_ready_queue[0]);
+	// ////////////////////////////////////
 
 	task_count++;
 
@@ -76,11 +76,14 @@ void eos_schedule() {
 		old_stack_ptr = _os_save_context();
 		if (old_stack_ptr != NULL) {
 			_os_current_task->sp = old_stack_ptr;
+			_os_current_task->state = READY;
 			// enqueu current task into ready queue
-			_os_add_node_tail(_os_ready_queue, task_node + _os_current_task->pid);
+			_os_add_node_tail(_os_ready_queue + _os_current_task->priority, task_node + _os_current_task->pid);
 			// reallocate current task on ready_queue
 			_os_current_task = _os_ready_queue[0]->ptr_data;
 			_os_remove_node(_os_ready_queue, task_node + _os_current_task->pid);
+
+			_os_current_task->state = RUNNING;
 
 			_os_restore_context(_os_current_task->sp);
 		} 
@@ -93,6 +96,9 @@ void eos_schedule() {
 	else {
 		_os_current_task = _os_ready_queue[0]->ptr_data;
 		_os_remove_node(_os_ready_queue, task_node + _os_current_task->pid);
+
+		// set status as RUNNING
+		_os_current_task->state = RUNNING;
 		
 		_os_restore_context(_os_current_task->sp);
 	}

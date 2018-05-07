@@ -11,7 +11,7 @@ void print_number() {
 	while(++i) {
 		printf("%d\n", i);
 		eos_schedule(); // 태스크 1 수행 중단, 태스크 2 수행 재개
-		if (i == 4) { i = 0; }
+		if (i == 20) { i = 0; }
 	}
 }
 /* task2 function - print alphabet a to z repeatedly */
@@ -20,7 +20,7 @@ void print_alphabet() {
 	while(++i) {
 		printf("%c\n", i);
 		eos_schedule(); // 태스크 2 수행 중단, 태스크 1 수행 재개
-		if (i == 100) { i = 96; }
+		if (i == 122) { i = 96; }
 	}
 }
 
