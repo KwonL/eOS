@@ -49,13 +49,14 @@ void task3() {
 
 void eos_user_main() {
 	// project 2
-	eos_create_task(&tcb1, (addr_t)stack1, 8096, print_number, NULL, 0);
-	eos_create_task(&tcb2, (addr_t)stack2, 8096, print_alphabet, NULL, 0);
+	// eos_create_task(&tcb1, (addr_t)stack1, 8096, print_number, NULL, 0);
+	// eos_create_task(&tcb2, (addr_t)stack2, 8096, print_alphabet, NULL, 0);
 
-	// eos_create_task(&tcb1, stack1, STACK_SIZE, task1, NULL, 1);
-	// eos_set_period(&tcb1, 2);
-	// eos_create_task(&tcb2, stack2, STACK_SIZE, task2, NULL, 10);
-	// eos_set_period(&tcb2, 4);
-	// eos_create_task(&tcb3, stack3, STACK_SIZE, task3, NULL, 50);
-	// eos_set_period(&tcb3, 8);
+	// project 3
+	eos_create_task(&tcb1, stack1, STACK_SIZE, task1, NULL, 1);
+	eos_set_period(&tcb1, 2);
+	eos_create_task(&tcb2, stack2, STACK_SIZE, task2, NULL, 10);
+	eos_set_period(&tcb2, 4);
+	eos_create_task(&tcb3, stack3, STACK_SIZE, task3, NULL, 50);
+	eos_set_period(&tcb3, 8);
 }
