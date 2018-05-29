@@ -79,15 +79,15 @@ extern void eos_trigger_counter(eos_counter_t* counter);
 
 /* The TCB (task control block) structure */
 typedef struct tcb {
+	// these vars are for node
+	struct tcb* previous;
+	struct tcb* next;
+
 	addr_t sp;
 	int8u_t state;
 	int32u_t priority;
 	int32u_t frequency;
 	int32u_t pid;
-
-	// these vars are for node
-	struct tcb* previous;
-	struct tcb* next;
 } eos_tcb_t;
 
 /*
