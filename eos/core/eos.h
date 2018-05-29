@@ -84,6 +84,10 @@ typedef struct tcb {
 	int32u_t priority;
 	int32u_t frequency;
 	int32u_t pid;
+
+	// these vars are for node
+	struct tcb* previous;
+	struct tcb* next;
 } eos_tcb_t;
 
 /*
