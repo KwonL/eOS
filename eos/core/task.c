@@ -45,6 +45,8 @@ int32u_t eos_create_task(eos_tcb_t *task, addr_t sblock_start, size_t sblock_siz
 	task_alarm[task->pid].alarm_queue_node.ptr_data = &task_alarm[task->pid];
 	task_alarm[task->pid].handler = entry;
 	task_alarm[task->pid].arg = arg;
+	PRINT("PID: %d, alarm: 0x%x\n", task->pid, &task_alarm[task->pid]);
+	PRINT("alarm's timeout: %d\n", task_alarm[task->pid].timeout);
     
 	// Add to ready queue
 	_os_add_node_tail(_os_ready_queue + priority, task);
@@ -95,7 +97,8 @@ void eos_schedule() {
 			_os_current_task->state = READY;
 			// enqueu current task into ready queue
 			_os_add_node_tail(_os_ready_queue + _os_current_task->priority, _os_current_task);
-			// reallocate current task on ready_queue
+			// set alarm
+			eos_set_alarm(eos_get_system_timer(), task_alarm + _os_current_task->pid, _os_current_task->period, &_os_wakeup_sleeping_task, _os_current_task);
 
 			while (next_priority == 0) next_priority = _os_get_highest_priority();
 			// get hightest priority task
@@ -157,6 +160,8 @@ void eos_sleep(int32u_t tick) {
 	// set alarm and call schedule to yeild CPU
 	eos_set_alarm(system_timer, &task_alarm[current_task->pid], current_task->period, _os_wakeup_sleeping_task, current_task);
 	_os_unset_ready(current_task->priority);
+
+	current_task->state = WAITING;
 	PRINT("SLEEP COMPLETE\n");
 	eos_schedule();
 }
@@ -184,5 +189,5 @@ void _os_wakeup_all(_os_node_t **wait_queue, int32u_t queue_type) {
 }
 
 void _os_wakeup_sleeping_task(void *arg) {
-
+	PRINT("WAKEUP CALLED\n");
 }

@@ -54,23 +54,35 @@ void eos_trigger_counter(eos_counter_t* counter) {
 	PRINT("tick\n");
 	// counter->tick++;
 
-	// // decrease all alarm's timeout
+	// // for debugging
 	// _os_node_t* cur_node = counter->alarm_queue;
-	// do {
-	// 	// queue is empty
-	// 	if (cur_node == NULL) break;
+	// eos_alarm_t* cur_alarm = cur_node->ptr_data;
+	// PRINT("alarm queue: 0x%x, first alarm: 0x%x\n", cur_node, cur_node->ptr_data);
+	// PRINT("alarm's timeout: %d\n", cur_alarm->timeout);
 
-	// 	// cur_node->ptr_data->timeout--;
-	// 	cur_node = cur_node->next;
-	// } while (cur_node != counter->alarm_queue);
+	// decrease all alarm's timeout
+	_os_node_t* cur_node = counter->alarm_queue;
+	eos_alarm_t* cur_alarm = cur_node->ptr_data;
+	do {
+		// queue is empty
+		if (cur_node == NULL) break;
+		
+		// decrease timeout
+		cur_alarm->timeout--;
 
-	// PRINT("counter->alarm_queue->ptr_data: 0x%x\n", counter->alarm_queue->ptr_data);
-	// // // if timeout is zero, then turn off alarm and call entry function
-	// // if (counter->alarm_queue->ptr_data->timeout == 0) {
-	// // 	// turn off alarm
-	// // 	eos_set_alarm(counter, counter->alarm_queue->ptr_data, 0, NULL, NULL);
-	// // 	counter->alarm_queue->ptr_data->handler(counter->alarm_queue->ptr_data->arg);
-	// // }
+		// move cussor to next block
+		cur_node = cur_node->next;
+		cur_alarm = cur_node->ptr_data;
+	} while (cur_node != counter->alarm_queue);
+
+	cur_alarm = counter->alarm_queue->ptr_data;
+	PRINT("counter->alarm_queue->ptr_data: 0x%x\n", counter->alarm_queue->ptr_data);
+	// if timeout is zero, then turn off alarm and call entry function
+	if (cur_alarm->timeout == 0) {
+		// turn off alarm
+		eos_set_alarm(counter, cur_alarm, 0, NULL, NULL);
+		cur_alarm->handler(cur_alarm->arg);
+	}
 }
 
 /* Timer interrupt handler */
