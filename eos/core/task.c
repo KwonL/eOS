@@ -34,7 +34,7 @@ int32u_t eos_create_task(eos_tcb_t *task, addr_t sblock_start, size_t sblock_siz
 	task->sp = context_ptr;
 	task->state = READY;
 	task->priority = priority;
-	task->frequency = 0;
+	task->preiod = 0;
 	task->pid = task_count;
 
 	// // enqueue task
@@ -117,6 +117,7 @@ int32u_t eos_get_priority(eos_tcb_t *task) {
 }
 
 void eos_set_period(eos_tcb_t *task, int32u_t period){
+	task->period = period;
 }
 
 int32u_t eos_get_period(eos_tcb_t *task) {

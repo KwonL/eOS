@@ -86,7 +86,7 @@ typedef struct tcb {
 	addr_t sp;
 	int8u_t state;
 	int32u_t priority;
-	int32u_t frequency;
+	int32u_t period;
 	int32u_t pid;
 } eos_tcb_t;
 
