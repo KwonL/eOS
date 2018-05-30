@@ -70,7 +70,7 @@ typedef struct eos_alarm {
 /*
  * each task has alarm that can awake task from sleeping
  */
-static eos_alarm_t task_alarm[3];
+static eos_alarm_t task_alarm[4];
 
 extern int8u_t eos_init_counter(eos_counter_t *counter, int32u_t init_value);
 extern void eos_set_alarm(eos_counter_t* counter, eos_alarm_t* alarm, int32u_t timeout, void (*entry)(void *arg), void *arg);

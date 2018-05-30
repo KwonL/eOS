@@ -42,12 +42,17 @@ int32u_t eos_create_task(eos_tcb_t *task, addr_t sblock_start, size_t sblock_siz
 	// task_node[task_count].ptr_data = task;
 
 	// set alarm for corresponding alarm node
-	task_alarm[task->pid]->alarm_queue_node.ptr_data = task_alarm[task->pid];
-	task_alarm[task->pid]->handler = entry;
-	task_alarm[task->pid]->arg = arg;
-	PRINT("ALARM SET: alarm-0x%x\n");
-
+	task_alarm[task->pid].alarm_queue_node.ptr_data = &task_alarm[task->pid];
+	task_alarm[task->pid].handler = entry;
+	task_alarm[task->pid].arg = arg;
+    
+	// Add to ready queue
 	_os_add_node_tail(_os_ready_queue + priority, task);
+
+	// set ready for scheduler
+	_os_set_ready(priority);
+	PRINT("hightest priority: %d\n", _os_get_highest_priority());
+
 	// PRINT("node: 0x%x, sp: 0x%x\n", task, task->sp);
 
 	// //debuging 
@@ -57,6 +62,8 @@ int32u_t eos_create_task(eos_tcb_t *task, addr_t sblock_start, size_t sblock_siz
 
 	task_count++;
 
+	PRINT("END OF CREATE TASK\n");
+
 	return 0;
 }
 
@@ -64,9 +71,10 @@ int32u_t eos_destroy_task(eos_tcb_t *task) {
 }
 
 void eos_schedule() {
-
+	PRINT("SCHEDULE CALLED\n");
 	// sp for current_task
-	addr_t old_stack_ptr;
+	addr_t old_stack_ptr = NULL;
+	int8u_t next_priority = 0;
 
 	// // for debuging, print all node
 	// int i;
@@ -81,14 +89,19 @@ void eos_schedule() {
 	if (_os_current_task != NULL) {
 		// save context and resotre next context
 		old_stack_ptr = _os_save_context();
+		PRINT("context saved\n");
 		if (old_stack_ptr != NULL) {
 			_os_current_task->sp = old_stack_ptr;
 			_os_current_task->state = READY;
 			// enqueu current task into ready queue
 			_os_add_node_tail(_os_ready_queue + _os_current_task->priority, _os_current_task);
 			// reallocate current task on ready_queue
-			_os_current_task = _os_ready_queue[0];
-			_os_remove_node(_os_ready_queue, _os_current_task);
+
+			while (next_priority == 0) next_priority = _os_get_highest_priority();
+			// get hightest priority task
+			PRINT("HIGHTEST PRIORITY: %d\n", next_priority);
+			_os_current_task = *(_os_ready_queue + next_priority);
+			_os_remove_node(_os_ready_queue + _os_current_task->priority, _os_current_task);
 
 			_os_current_task->state = RUNNING;
 
@@ -101,12 +114,11 @@ void eos_schedule() {
 	}
 	// there is no task initially
 	else {
-		_os_current_task = _os_ready_queue[0];
-		_os_remove_node(_os_ready_queue, _os_current_task);
-
+		_os_current_task = *(_os_ready_queue + _os_get_highest_priority());
+		_os_remove_node(_os_ready_queue + _os_current_task->priority, _os_current_task);
+		PRINT("no initial task\n");
 		// set status as RUNNING
 		_os_current_task->state = RUNNING;
-		
 		_os_restore_context(_os_current_task->sp);
 	}
 
@@ -136,7 +148,17 @@ int32u_t eos_resume_task(eos_tcb_t *task) {
 }
 
 void eos_sleep(int32u_t tick) {
-	
+	PRINT("SLEEP CALLED\n");
+
+	eos_counter_t* system_timer = eos_get_system_timer();
+	eos_tcb_t* current_task = eos_get_current_task();
+
+	PRINT("SYSTIMER: 0x%x, timer's queue: 0x%x\n", system_timer, system_timer->alarm_queue);
+	// set alarm and call schedule to yeild CPU
+	eos_set_alarm(system_timer, &task_alarm[current_task->pid], current_task->period, _os_wakeup_sleeping_task, current_task);
+	_os_unset_ready(current_task->priority);
+	PRINT("SLEEP COMPLETE\n");
+	eos_schedule();
 }
 
 void _os_init_task() {
@@ -162,4 +184,5 @@ void _os_wakeup_all(_os_node_t **wait_queue, int32u_t queue_type) {
 }
 
 void _os_wakeup_sleeping_task(void *arg) {
+
 }
