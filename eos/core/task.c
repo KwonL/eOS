@@ -34,13 +34,19 @@ int32u_t eos_create_task(eos_tcb_t *task, addr_t sblock_start, size_t sblock_siz
 	task->sp = context_ptr;
 	task->state = READY;
 	task->priority = priority;
-	task->preiod = 0;
+	task->period = 0;
 	task->pid = task_count;
 
 	// // enqueue task
 	// task_node[task_count].priority = task->priority;
 	// task_node[task_count].ptr_data = task;
-	
+
+	// set alarm for corresponding alarm node
+	task_alarm[task->pid]->alarm_queue_node.ptr_data = task_alarm[task->pid];
+	task_alarm[task->pid]->handler = entry;
+	task_alarm[task->pid]->arg = arg;
+	PRINT("ALARM SET: alarm-0x%x\n");
+
 	_os_add_node_tail(_os_ready_queue + priority, task);
 	// PRINT("node: 0x%x, sp: 0x%x\n", task, task->sp);
 
@@ -130,6 +136,7 @@ int32u_t eos_resume_task(eos_tcb_t *task) {
 }
 
 void eos_sleep(int32u_t tick) {
+	
 }
 
 void _os_init_task() {
