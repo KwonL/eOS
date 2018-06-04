@@ -53,7 +53,7 @@ eos_counter_t* eos_get_system_timer() {
 }
 
 void eos_trigger_counter(eos_counter_t* counter) {
-	PRINT("tick\n");
+	PRINT("tick %d\n", counter->tick);
 	counter->tick++;
 
 	// for debugging
