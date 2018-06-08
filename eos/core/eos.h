@@ -253,6 +253,17 @@ extern void eos_disable_irq_line(int32u_t irq);
  * The Message Queue structure
  */
 typedef struct eos_mqueue {
+	int16u_t queue_size; 
+	int8u_t msg_size;
+
+	addr_t queue_start;
+	addr_t front;
+	addr_t rear;
+	
+	int8u_t queue_type;
+	
+	eos_semaphore_t putsem;
+	eos_semaphore_t getsem;
 } eos_mqueue_t;
 
 /*

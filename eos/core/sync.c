@@ -15,6 +15,7 @@ void eos_init_semaphore(eos_semaphore_t *sem, int32u_t initial_count, int8u_t qu
 }
 
 int32u_t eos_acquire_semaphore(eos_semaphore_t *sem, int32s_t timeout) {
+	// PRINT("Acquire semaphore!\n");
 	// first, disable interrupt to make this function atomic
 	eos_disable_interrupt();
 
@@ -42,7 +43,6 @@ int32u_t eos_acquire_semaphore(eos_semaphore_t *sem, int32s_t timeout) {
 				if (sem->queue_type == 0) {
 					// queueing task block to wait queue
 					_os_add_node_tail(&sem->wait_queue, current_task);
-					current_task->period = 0;
 					// yield CPU
 					eos_sleep(0);
 				}
@@ -50,15 +50,12 @@ int32u_t eos_acquire_semaphore(eos_semaphore_t *sem, int32s_t timeout) {
 				else {
 					// queueing task block to wait queue
 					_os_add_node_priority(&sem->wait_queue, current_task);
-					current_task->period = 0;
 					// yield CPU
 					eos_sleep(0);
 				}
 			}
 			// waiting until timeout
 			else {
-				current_task->period = timeout;
-				
 				eos_sleep(0);
 			}
 		}
@@ -66,13 +63,16 @@ int32u_t eos_acquire_semaphore(eos_semaphore_t *sem, int32s_t timeout) {
 }
 
 void eos_release_semaphore(eos_semaphore_t *sem) {
+	// PRINT("Release semaphore!\n");
 	// first, disable interrupt to make this function atomic
 	eos_disable_interrupt();
 
 	eos_tcb_t* next_task = sem->wait_queue;
 
+	// PRINT("next task: 0x%x\n", next_task);
 	sem->count++;
 	
+	eos_enable_interrupt();
 	if (next_task != NULL) {
 		// remove next task from sem's waiting queue
 		_os_remove_node(&sem->wait_queue, next_task);
