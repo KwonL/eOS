@@ -152,6 +152,12 @@ extern void eos_sleep(int32u_t tick);
  * The Semaphore structure
  */
 typedef struct eos_semaphore {
+	// instance number of resource
+	int32u_t count;
+	// task's wait queue
+	eos_tcb_t* wait_queue;
+	// 0: FIFO, 1: Priority-based
+	int8u_t queue_type;
 } eos_semaphore_t;
 
 /*

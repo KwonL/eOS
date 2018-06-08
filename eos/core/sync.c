@@ -9,12 +9,17 @@
 
 void eos_init_semaphore(eos_semaphore_t *sem, int32u_t initial_count, int8u_t queue_type) {
 	/* initialization */
+	sem->count = initial_count;
+	sem->wait_queue = NULL;
+	sem->queue_type = queue_type;
 }
 
 int32u_t eos_acquire_semaphore(eos_semaphore_t *sem, int32s_t timeout) {
+
 }
 
 void eos_release_semaphore(eos_semaphore_t *sem) {
+	
 }
 
 void eos_init_condition(eos_condition_t *cond, int32u_t queue_type) {
