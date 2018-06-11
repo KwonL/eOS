@@ -36,6 +36,7 @@ int8u_t eos_send_message(eos_mqueue_t *mq, void *message, int32s_t timeout) {
         *(char *)(mq->rear + i) = *(char *)(message + i);
         PRINT("message: %c\n", *(char*)(message + i));
         mq->rear++;
+        PRINT("queue_start: 0x%x, rear: 0x%x\n", mq->queue_start, mq->rear);
 
         // if reach to end of queue, back to start of queue
         if (mq->rear - mq->queue_start == mq->msg_size * mq->queue_size) {
@@ -62,8 +63,9 @@ int8u_t eos_receive_message(eos_mqueue_t *mq, void *message, int32s_t timeout) {
     // copy message from queue
     for (i = 0; i < mq->msg_size; i++) {
         *(char *)(message + i) = *(char *)(mq->front + i);
-        PRINT("message: %c\n", *(char*)(message + i));
+        // PRINT("message: %c\n", *(char*)(message + i));
         mq->front++;
+        PRINT("queue_start: 0x%x, front: 0x%x\n", mq->queue_start, mq->front);
 
         if (mq->front - mq->queue_start == mq->msg_size * mq->queue_size) {
             mq->front = mq->queue_start;

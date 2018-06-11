@@ -72,13 +72,15 @@ void eos_release_semaphore(eos_semaphore_t *sem) {
 	// PRINT("next task: 0x%x\n", next_task);
 	sem->count++;
 	
-	eos_enable_interrupt();
 	if (next_task != NULL) {
 		// remove next task from sem's waiting queue
 		_os_remove_node(&sem->wait_queue, next_task);
 
 		_os_wakeup_sleeping_task(next_task);
+		PRINT("wake UP task!: %d\n", next_task->pid);
 	}
+	
+	eos_enable_interrupt();
 }
 
 void eos_init_condition(eos_condition_t *cond, int32u_t queue_type) {

@@ -67,10 +67,10 @@ typedef struct eos_alarm {
 	_os_node_t alarm_queue_node;
 } eos_alarm_t;
 
-/*
- * each task has alarm that can awake task from sleeping
- */
-static eos_alarm_t task_alarm[20];
+// /*
+//  * each task has alarm that can awake task from sleeping
+//  */
+// static eos_alarm_t task_alarm[20];
 
 extern int8u_t eos_init_counter(eos_counter_t *counter, int32u_t init_value);
 extern void eos_set_alarm(eos_counter_t* counter, eos_alarm_t* alarm, int32u_t timeout, void (*entry)(void *arg), void *arg);
@@ -93,6 +93,11 @@ typedef struct tcb {
 	int32u_t priority;
 	int32u_t period;
 	int32u_t pid;
+
+	/*
+	 * each task has alarm that can awake task from sleeping
+	 */
+	eos_alarm_t task_alarm;
 } eos_tcb_t;
 
 /*
