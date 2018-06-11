@@ -85,20 +85,35 @@ void eos_schedule() {
 		// PRINT("context saved\n");
 		if (old_stack_ptr != NULL) {
 			_os_current_task->sp = old_stack_ptr;
-			_os_current_task->state = READY;
-			// enqueu current task into ready queue
-			_os_add_node_tail(_os_ready_queue + _os_current_task->priority, _os_current_task);
+			if (_os_current_task->state != WAITING) {
+				_os_current_task->state = READY;
+				// enqueu current task into ready queue
+				_os_add_node_tail(_os_ready_queue + _os_current_task->priority, _os_current_task);
+			}
 			// set alarm
 			eos_set_alarm(eos_get_system_timer(), &_os_current_task->task_alarm, _os_current_task->period, &_os_wakeup_sleeping_task, _os_current_task);
 
 			while (next_priority == 63) { 
 				next_priority = _os_get_highest_priority();
 			}
-			PRINT("Now, priority: %d\n", next_priority);
+			// PRINT("Now, priority: %d\n", next_priority);
 
 			// get hightest priority task
 			_os_current_task = *(_os_ready_queue + next_priority);
 			_os_remove_node(_os_ready_queue + _os_current_task->priority, _os_current_task);
+			// PRINT("_OS_ready_queue: 0x%x\n", _os_ready_queue[_os_current_task->priority]);
+
+			// for debugging
+			// eos_tcb_t* temp_tcb = _os_ready_queue[_os_current_task->priority];
+			// do {
+			// 	PRINT("curr priority ready queue: 0x%x\n", temp_tcb); 
+			// 	temp_tcb = temp_tcb->next;
+			// } while (temp_tcb != _os_ready_queue[_os_current_task->priority]);
+
+			if (_os_ready_queue[_os_current_task->priority] == NULL) {
+				_os_unset_ready(_os_current_task->priority);
+				// PRINT("UNSET READY!: %d\n", _os_current_task->priority);
+			}
 
 			_os_current_task->state = RUNNING;
 
@@ -113,6 +128,7 @@ void eos_schedule() {
 	else {
 		_os_current_task = *(_os_ready_queue + _os_get_highest_priority());
 		_os_remove_node(_os_ready_queue + _os_current_task->priority, _os_current_task);
+
 		// PRINT("no initial task\n");
 		// set status as RUNNING
 		_os_current_task->state = RUNNING;
@@ -154,8 +170,11 @@ void eos_sleep(int32u_t tick) {
 	// set alarm and call schedule to yeild CPU
 	eos_set_alarm(system_timer, &_os_current_task->task_alarm, current_task->period, _os_wakeup_sleeping_task, current_task);
 	
-	if (_os_ready_queue[current_task->priority] == NULL)
+	if (_os_ready_queue[current_task->priority] == NULL) {
 		_os_unset_ready(current_task->priority);
+		
+		// PRINT("UNSET READY!: %d\n", current_task->priority);
+	}
 
 	current_task->state = WAITING;
 	// PRINT("SLEEP COMPLETE\n");

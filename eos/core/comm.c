@@ -21,7 +21,7 @@ void eos_init_mqueue(eos_mqueue_t *mq, void *queue_start, int16u_t queue_size, i
 }
 
 int8u_t eos_send_message(eos_mqueue_t *mq, void *message, int32s_t timeout) {
-    PRINT("Send message called!\n");
+    // PRINT("Send message called!\n");
     // if failed to acquireing semaphore, just return
     if (eos_acquire_semaphore(&mq->putsem, timeout) == 0) {
         return 0;
@@ -34,9 +34,9 @@ int8u_t eos_send_message(eos_mqueue_t *mq, void *message, int32s_t timeout) {
     // copy message to mq's rear
     for (i = 0; i < mq->msg_size; i++) {
         *(char *)(mq->rear + i) = *(char *)(message + i);
-        PRINT("message: %c\n", *(char*)(message + i));
+        // PRINT("message: %c\n", *(char*)(message + i));
         mq->rear++;
-        PRINT("queue_start: 0x%x, rear: 0x%x\n", mq->queue_start, mq->rear);
+        // PRINT("queue_start: 0x%x, rear: 0x%x\n", mq->queue_start, mq->rear);
 
         // if reach to end of queue, back to start of queue
         if (mq->rear - mq->queue_start == mq->msg_size * mq->queue_size) {
@@ -49,7 +49,7 @@ int8u_t eos_send_message(eos_mqueue_t *mq, void *message, int32s_t timeout) {
 }
 
 int8u_t eos_receive_message(eos_mqueue_t *mq, void *message, int32s_t timeout) {
-    PRINT("Recieve message called!\n");
+    // PRINT("Recieve message called!\n");
     // if failed to acquiring semaphore, just return
     if (eos_acquire_semaphore(&mq->getsem, timeout) == 0) {
         return 0;
@@ -65,7 +65,7 @@ int8u_t eos_receive_message(eos_mqueue_t *mq, void *message, int32s_t timeout) {
         *(char *)(message + i) = *(char *)(mq->front + i);
         // PRINT("message: %c\n", *(char*)(message + i));
         mq->front++;
-        PRINT("queue_start: 0x%x, front: 0x%x\n", mq->queue_start, mq->front);
+        // PRINT("queue_start: 0x%x, front: 0x%x\n", mq->queue_start, mq->front);
 
         if (mq->front - mq->queue_start == mq->msg_size * mq->queue_size) {
             mq->front = mq->queue_start;

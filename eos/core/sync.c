@@ -20,8 +20,8 @@ int32u_t eos_acquire_semaphore(eos_semaphore_t *sem, int32s_t timeout) {
 	eos_disable_interrupt();
 
 	// for debugging
-	PRINT("Now sem count is %d\n", sem->count);
-	PRINT("And first node of wait queue: 0x%x\n", sem->wait_queue);
+	// PRINT("Now sem count is %d\n", sem->count);
+	// PRINT("And first node of wait queue: 0x%x\n", sem->wait_queue);
 
 	eos_tcb_t* current_task = eos_get_current_task();
 	
@@ -48,7 +48,9 @@ int32u_t eos_acquire_semaphore(eos_semaphore_t *sem, int32s_t timeout) {
 					// queueing task block to wait queue
 					_os_add_node_tail(&sem->wait_queue, current_task);
 					// yield CPU
-					PRINT("GO to sleep zzz\n");
+					// PRINT("Now, wait_queue: 0x%x\n", sem->wait_queue);
+					// PRINT("next of wait_queue: 0x%x\n", sem->wait_queue->next);
+					// PRINT("GO to sleep zzz\n");
 					eos_enable_interrupt();
 					eos_sleep(0);
 				}
@@ -85,12 +87,12 @@ void eos_release_semaphore(eos_semaphore_t *sem) {
 		_os_remove_node(&sem->wait_queue, next_task);
 
 		_os_wakeup_sleeping_task(next_task);
-		PRINT("wake UP task!: %d\n", next_task->pid);
+		// PRINT("wake UP task!: %d\n", next_task->pid);
 		eos_schedule();
 	}
 	
-	PRINT("Now sem count is %d\n", sem->count);
-	PRINT("And first node of wait queue: 0x%x\n", sem->wait_queue);
+	// PRINT("Now sem count is %d\n", sem->count);
+	// PRINT("And first node of wait queue: 0x%x\n", sem->wait_queue);
 
 	eos_enable_interrupt();
 }
