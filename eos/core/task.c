@@ -78,15 +78,6 @@ void eos_schedule() {
 	addr_t old_stack_ptr = NULL;
 	int8u_t next_priority = 63;
 
-	// // for debuging, print all node
-	// int i;
-	// eos_tcb_t* cur = _os_ready_queue[0];
-	// for (i= 0; i < 2; i++) {
-	// 	PRINT("current : 0x%x\n", cur);
-	// 	PRINT("sp: 0x%x\n", cur->sp);
-	// 	cur = cur->next;
-	// }
-
 	// some task that is running
 	if (_os_current_task != NULL) {
 		// save context and resotre next context
@@ -103,7 +94,7 @@ void eos_schedule() {
 			while (next_priority == 63) { 
 				next_priority = _os_get_highest_priority();
 			}
-			// PRINT("Now, priority: %d\n", next_priority);
+			PRINT("Now, priority: %d\n", next_priority);
 
 			// get hightest priority task
 			_os_current_task = *(_os_ready_queue + next_priority);
@@ -162,7 +153,9 @@ void eos_sleep(int32u_t tick) {
 	// PRINT("SYSTIMER: 0x%x, timer's queue: 0x%x\n", system_timer, system_timer->alarm_queue);
 	// set alarm and call schedule to yeild CPU
 	eos_set_alarm(system_timer, &_os_current_task->task_alarm, current_task->period, _os_wakeup_sleeping_task, current_task);
-	_os_unset_ready(current_task->priority);
+	
+	if (_os_ready_queue[current_task->priority] == NULL)
+		_os_unset_ready(current_task->priority);
 
 	current_task->state = WAITING;
 	// PRINT("SLEEP COMPLETE\n");
