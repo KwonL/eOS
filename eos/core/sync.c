@@ -21,7 +21,6 @@ int32u_t eos_acquire_semaphore(eos_semaphore_t *sem, int32s_t timeout) {
 
 	// for debugging
 	// PRINT("Now sem count is %d\n", sem->count);
-	// PRINT("And first node of wait queue: 0x%x\n", sem->wait_queue);
 
 	eos_tcb_t* current_task = eos_get_current_task();
 	
@@ -30,6 +29,11 @@ int32u_t eos_acquire_semaphore(eos_semaphore_t *sem, int32s_t timeout) {
 		// if there is sufficient resource
 		if (sem->count > 0) {
 			sem->count--;
+
+			_os_remove_node(&sem->wait_queue, &current_task->sem_wait_queue_node);
+
+			// PRINT("Aquire sem!!\n");
+			// PRINT("curr next: 0x%x\n", current_task->next);
 			eos_enable_interrupt();
 			
 			return 1;
@@ -46,7 +50,7 @@ int32u_t eos_acquire_semaphore(eos_semaphore_t *sem, int32s_t timeout) {
 				// FIFO queue
 				if (sem->queue_type == 0) {
 					// queueing task block to wait queue
-					_os_add_node_tail(&sem->wait_queue, current_task);
+					_os_add_node_tail(&sem->wait_queue, &current_task->sem_wait_queue_node);
 					// yield CPU
 					// PRINT("Now, wait_queue: 0x%x\n", sem->wait_queue);
 					// PRINT("next of wait_queue: 0x%x\n", sem->wait_queue->next);
@@ -57,7 +61,8 @@ int32u_t eos_acquire_semaphore(eos_semaphore_t *sem, int32s_t timeout) {
 				// Priority-based queue
 				else {
 					// queueing task block to wait queue
-					_os_add_node_priority(&sem->wait_queue, current_task);
+					// PRINT("state: %x\n", current_task->state);
+					_os_add_node_priority(&sem->wait_queue, &current_task->sem_wait_queue_node);
 					// yield CPU
 					eos_enable_interrupt();
 					eos_sleep(0);
@@ -77,18 +82,21 @@ void eos_release_semaphore(eos_semaphore_t *sem) {
 	// first, disable interrupt to make this function atomic
 	eos_disable_interrupt();
 
-	eos_tcb_t* next_task = sem->wait_queue;
+	eos_tcb_t* next_task = NULL;
+	if (sem->wait_queue != NULL) 
+		next_task = sem->wait_queue->ptr_data;
 
 	// PRINT("next task: 0x%x\n", next_task);
 	sem->count++;
 	
 	if (next_task != NULL) {
 		// remove next task from sem's waiting queue
-		_os_remove_node(&sem->wait_queue, next_task);
+		_os_remove_node(&sem->wait_queue, &next_task->sem_wait_queue_node);
 
-		_os_wakeup_sleeping_task(next_task);
-		// PRINT("wake UP task!: %d\n", next_task->pid);
-		eos_schedule();
+		if (next_task->state != 1)
+			_os_wakeup_sleeping_task(next_task);
+		// PRINT("wake UP task!: %d, wait_queue: 0x%x\n", next_task->pid, sem->wait_queue);
+		// eos_schedule();
 	}
 	
 	// PRINT("Now sem count is %d\n", sem->count);

@@ -47,9 +47,20 @@ int32u_t eos_create_task(eos_tcb_t *task, addr_t sblock_start, size_t sblock_siz
 	task->task_alarm.arg = arg;
 	// PRINT("PID: %d, alarm: 0x%x\n", task->pid, &task_alarm[task->pid]);
 	// PRINT("alarm's timeout: %d\n", task_alarm[task->pid].timeout);
+
+	// initializing ready queue node
+	task->ready_queue_node.next = NULL;
+	task->ready_queue_node.previous = NULL;
+	task->ready_queue_node.priority = priority;
+	task->ready_queue_node.ptr_data = task;
+
+	task->sem_wait_queue_node.next = NULL;
+	task->sem_wait_queue_node.previous = NULL;
+	task->sem_wait_queue_node.priority = priority;
+	task->sem_wait_queue_node.ptr_data = task;
     
 	// Add to ready queue
-	_os_add_node_tail(_os_ready_queue + priority, task);
+	_os_add_node_tail(_os_ready_queue + priority, &task->ready_queue_node);
 
 	// set ready for scheduler
 	_os_set_ready(priority);
@@ -78,6 +89,11 @@ void eos_schedule() {
 	addr_t old_stack_ptr = NULL;
 	int8u_t next_priority = 63;
 
+	// for debugging
+	eos_tcb_t* in_ready = NULL;
+	if (_os_current_task != NULL)
+		in_ready = _os_ready_queue[_os_current_task->priority];
+
 	// some task that is running
 	if (_os_current_task != NULL) {
 		// save context and resotre next context
@@ -85,13 +101,20 @@ void eos_schedule() {
 		// PRINT("context saved\n");
 		if (old_stack_ptr != NULL) {
 			_os_current_task->sp = old_stack_ptr;
-			if (_os_current_task->state != WAITING) {
+			if (_os_current_task->state == RUNNING) {
+				// PRINT("saving context...\n");
 				_os_current_task->state = READY;
+
+				// PRINT("_os_current_task's next: 0x%x, prev: 0x%x\n", _os_current_task->next, _os_current_task->previous);
 				// enqueu current task into ready queue
-				_os_add_node_tail(_os_ready_queue + _os_current_task->priority, _os_current_task);
+				_os_add_node_tail(_os_ready_queue + _os_current_task->priority, &_os_current_task->ready_queue_node);
+				_os_set_ready(_os_current_task->priority);
+			} else {
+				// PRINT("this task goto sleep\n");
+				// PRINT("_os_current_task's next: 0x%x, prev: 0x%x\n", _os_current_task->next, _os_current_task->previous);
 			}
 			// set alarm
-			eos_set_alarm(eos_get_system_timer(), &_os_current_task->task_alarm, _os_current_task->period, &_os_wakeup_sleeping_task, _os_current_task);
+			// eos_set_alarm(eos_get_system_timer(), &_os_current_task->task_alarm, _os_current_task->period, &_os_wakeup_sleeping_task, _os_current_task);
 
 			while (next_priority == 63) { 
 				next_priority = _os_get_highest_priority();
@@ -99,8 +122,8 @@ void eos_schedule() {
 			// PRINT("Now, priority: %d\n", next_priority);
 
 			// get hightest priority task
-			_os_current_task = *(_os_ready_queue + next_priority);
-			_os_remove_node(_os_ready_queue + _os_current_task->priority, _os_current_task);
+			_os_current_task = _os_ready_queue[next_priority]->ptr_data;
+			_os_remove_node(_os_ready_queue + _os_current_task->priority, &_os_current_task->ready_queue_node);
 			// PRINT("_OS_ready_queue: 0x%x\n", _os_ready_queue[_os_current_task->priority]);
 
 			// for debugging
@@ -121,13 +144,15 @@ void eos_schedule() {
 		} 
 		// after resotring context
 		else {
+			// PRINT("return from restore\n");
 			return;
 		}
 	}
 	// there is no task initially
 	else {
-		_os_current_task = *(_os_ready_queue + _os_get_highest_priority());
-		_os_remove_node(_os_ready_queue + _os_current_task->priority, _os_current_task);
+		// PRINT("no initial task\n");
+		_os_current_task = (*(_os_ready_queue + _os_get_highest_priority()))->ptr_data;
+		_os_remove_node(_os_ready_queue + _os_current_task->priority, &_os_current_task->ready_queue_node);
 
 		// PRINT("no initial task\n");
 		// set status as RUNNING
@@ -204,14 +229,14 @@ void _os_wakeup_all(_os_node_t **wait_queue, int32u_t queue_type) {
 }
 
 void _os_wakeup_sleeping_task(void *arg) {
-	// PRINT("WAKEUP CALLED\n");
-
 	// task
 	eos_tcb_t* task = arg;
 	task->state = READY;
 
+	// PRINT("WAKEUP CALLED: task %d\n", task->pid);
+
 	// queueing task into reqdy queue
-	_os_add_node_tail(_os_ready_queue + task->priority, task);
+	_os_add_node_tail(_os_ready_queue + task->priority, &task->ready_queue_node);
 	// set ready at bitmap
 	_os_set_ready(task->priority);
 	// PRINT("NOW PROCESS's priority: 0x%x\n", task->priority);

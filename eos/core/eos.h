@@ -98,6 +98,8 @@ typedef struct tcb {
 	 * each task has alarm that can awake task from sleeping
 	 */
 	eos_alarm_t task_alarm;
+	_os_node_t ready_queue_node;
+	_os_node_t sem_wait_queue_node;
 } eos_tcb_t;
 
 /*
@@ -160,7 +162,7 @@ typedef struct eos_semaphore {
 	// instance number of resource
 	int32u_t count;
 	// task's wait queue
-	eos_tcb_t* wait_queue;
+	_os_node_t* wait_queue;
 	// 0: FIFO, 1: Priority-based
 	int8u_t queue_type;
 } eos_semaphore_t;
