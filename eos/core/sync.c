@@ -70,8 +70,14 @@ int32u_t eos_acquire_semaphore(eos_semaphore_t *sem, int32s_t timeout) {
 			}
 			// waiting until timeout
 			else {
+				int32s_t t_temp = timeout;
+				timeout = -1;
+				if (sem->queue_type == FIFO) 
+					_os_add_node_tail(&sem->wait_queue, &current_task->sem_wait_queue_node);
+				else 
+					_os_add_node_priority(&sem->wait_queue, &current_task->sem_wait_queue_node);
 				eos_enable_interrupt();
-				eos_sleep(0);
+				eos_sleep(t_temp);
 			}
 		}
 	} while (1);

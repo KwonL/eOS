@@ -193,7 +193,11 @@ void eos_sleep(int32u_t tick) {
 
 	// PRINT("SYSTIMER: 0x%x, timer's queue: 0x%x\n", system_timer, system_timer->alarm_queue);
 	// set alarm and call schedule to yeild CPU
-	eos_set_alarm(system_timer, &_os_current_task->task_alarm, current_task->period, _os_wakeup_sleeping_task, current_task);
+	if (tick == 0) 
+		eos_set_alarm(system_timer, &_os_current_task->task_alarm, current_task->period, _os_wakeup_sleeping_task, current_task);
+	else {
+		eos_set_alarm(system_timer, &_os_current_task->task_alarm, tick, _os_wakeup_sleeping_task, current_task);
+	}
 	
 	if (_os_ready_queue[current_task->priority] == NULL) {
 		_os_unset_ready(current_task->priority);
